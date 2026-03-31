@@ -15,7 +15,13 @@ request = pc.makeRequestRSpec()
 pc.defineParameter("Hardware", "Hardware Type",
                    portal.ParameterType.STRING, 
                    "c6525-100g",
-                   ["c6525-100g", "d760"],
+                   [
+                       "c6525-100g", "c6525-25g", "c6620", 
+                       "d760", "d750", "d7615", "d6515",
+                       "r650", "r6525", "r6615", "r7525",
+                       "c220g5", "c240g5", "d7525", "d8545",
+                       "m510", "xl170"
+                   ],
                    "The type of hardware node to allocate.")
 
 params = pc.bindParameters()

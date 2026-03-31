@@ -6,7 +6,7 @@
 3. Go to the **Profile Selection** step.
 4. Click **Change Profile** -> **Instantiate Repository**.
 5. Paste the GitHub URL for your repository containing these files. CloudLab will automatically read the `profile.py` file.
-6. In the **Parameterize** step, choose the `c6525-100g` (default, recommended) or `d760` hardware type.
+6. In the **Parameterize** step, choose your desired hardware type (default: `c6525-100g`). There are many options available across Utah, Clemson, and Wisconsin clusters in case the default nodes are reserved.
 7. Click **Finish/Instantiate** and wait for the CloudLab node to provision (this takes about 10-15 minutes).
 
 ## Step 2: Ensure Node Setup Completes
