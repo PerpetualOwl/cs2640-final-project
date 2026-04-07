@@ -1,0 +1,17 @@
+[global]
+ioengine=io_uring_cmd
+cmd_type=nvme
+sqthread_poll=1
+direct=0
+size=1G
+time_based=1
+runtime=20
+randrepeat=0
+
+[mongodb_ycsb_a]
+# YCSB A: 50% Read, 50% Write (Update Heavy)
+rw=randrw
+rwmixread=50
+bs=16k
+# Simulate document popularity skew
+random_distribution=zipf:1.2
