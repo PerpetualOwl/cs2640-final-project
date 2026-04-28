@@ -85,31 +85,7 @@ if [ "$RUN_NATIVE" = true ]; then
         tee "$RESULTS_DIR/mongodb_full.log"
     echo ""
 
-    # -------------------------------------------------------------------
-    # 3. CacheLib Benchmarks
-    # -------------------------------------------------------------------
-    echo "=============================="
-    echo " [3/3] CacheLib (native NVMe)"
-    echo "=============================="
-    drop_caches
-    if command -v cachebench &> /dev/null || [ -x "/usr/local/bin/cachebench" ] || [ -x "/local/build/CacheLib/opt/cachelib/bin/cachebench" ]; then
-        # Check specific paths and add to PATH if needed
-        if ! command -v cachebench &> /dev/null; then
-            if [ -x "/usr/local/bin/cachebench" ]; then
-                export PATH="$PATH:/usr/local/bin"
-            elif [ -x "/local/build/CacheLib/opt/cachelib/bin/cachebench" ]; then
-                export PATH="$PATH:/local/build/CacheLib/opt/cachelib/bin"
-            fi
-        fi
-        
-        bash "$SCRIPT_DIR/cachelib/run_cachelib.sh" "$NVME_MOUNT" "$RESULTS_DIR" 2>&1 | \
-            tee "$RESULTS_DIR/cachelib_full.log"
-    else
-        echo "SKIPPING CacheLib benchmarks: 'cachebench' not found."
-        echo "CacheLib is complex to build from source and may have failed during setup."
-        echo "RocksDB and MongoDB benchmarks will provide sufficient data for the final matrix."
-    fi
-    echo ""
+
 
     echo "--- Native benchmarks complete ---"
     echo ""

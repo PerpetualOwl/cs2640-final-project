@@ -123,36 +123,9 @@ fi
 echo "YCSB installed at $BUILDDIR/ycsb"
 
 # -----------------------------------------------------------------------
-# 6. Build CacheLib + cachebench
+# 6. Download Ubuntu cloud image for QEMU ZNS/FDP emulation
 # -----------------------------------------------------------------------
-echo "[6/7] Building CacheLib ..."
-cd "$BUILDDIR"
-if [ ! -d CacheLib ]; then
-    git clone --depth 1 https://github.com/facebook/CacheLib.git
-fi
-cd CacheLib
-# CacheLib has its own dependency installer
-sudo ./contrib/build.sh -j $(nproc) -d
-# Build cachebench
-cd opt/cachelib && mkdir -p build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
-make -j$(nproc) cachebench 2>&1 || {
-    echo "WARNING: CacheLib build failed, falling back to cachebench-only"
-    # Try building just the benchmark target
-    make cachebench -j$(( $(nproc) / 2 )) 2>&1 || true
-}
-# Copy cachebench if it was built
-if [ -f cachebench/cachebench ]; then
-    sudo cp cachebench/cachebench /usr/local/bin/
-    echo "cachebench installed: $(which cachebench)"
-else
-    echo "WARNING: cachebench not found in build output"
-fi
-
-# -----------------------------------------------------------------------
-# 7. Download Ubuntu cloud image for QEMU ZNS/FDP emulation
-# -----------------------------------------------------------------------
-echo "[7/7] Downloading Ubuntu 22.04 cloud image for QEMU VM ..."
+echo "[6/6] Downloading Ubuntu 22.04 cloud image for QEMU VM ..."
 CLOUD_IMG_DIR="/local/build/images"
 mkdir -p "$CLOUD_IMG_DIR"
 if [ ! -f "$CLOUD_IMG_DIR/jammy-server-cloudimg-amd64.img" ]; then

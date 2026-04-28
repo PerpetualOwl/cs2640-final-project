@@ -47,7 +47,7 @@ The `setup.sh` script runs automatically on first boot. It will:
 3. Compile RocksDB and `db_bench` from source
 4. Install MongoDB 7.0 Community Edition
 5. Download YCSB 0.17.0
-6. Build CacheLib and `cachebench`
+
 
 ### Monitor setup progress:
 ```bash
@@ -61,7 +61,7 @@ tail -f /local/logs/setup.log
 # "Setup completed successfully!"
 ```
 
-> **Expected duration**: 15-30 minutes depending on build times. RocksDB and CacheLib compilation are the longest steps.
+> **Expected duration**: 15-30 minutes depending on build times. RocksDB compilation is the longest step.
 
 ---
 
@@ -94,7 +94,7 @@ sudo ./benchmarks/run_all.sh
 This runs all three database benchmarks sequentially:
 1. **RocksDB** — `db_bench` with 5 workload profiles
 2. **MongoDB** — YCSB Workloads A, B, C, F
-3. **CacheLib** — `cachebench` with 3 cache workload profiles
+
 
 ### Run Individual Benchmarks
 ```bash
@@ -104,8 +104,7 @@ sudo ./benchmarks/rocksdb/run_rocksdb.sh /mnt/nvme /local/repository/results
 # MongoDB only
 sudo ./benchmarks/mongodb/run_mongodb.sh /mnt/nvme /local/repository/results
 
-# CacheLib only
-sudo ./benchmarks/cachelib/run_cachelib.sh /mnt/nvme /local/repository/results
+
 ```
 
 ---
@@ -134,11 +133,6 @@ results/
 │   ├── workloadc_run.log        # YCSB-C run phase (100% Read)
 │   ├── workloadf_run.log        # YCSB-F run phase (Read-Modify-Write)
 │   └── wiredtiger_stats.json    # WiredTiger engine statistics
-├── cachelib_full.log            # Complete CacheLib output
-└── cachelib/
-    ├── graph_cache.log          # Small object, read-heavy cache
-    ├── cdn_cache.log            # Large object, write-heavy cache
-    └── kv_store.log             # Mixed KV store workload
 ```
 
 ### Copy Results Off the Node
@@ -182,18 +176,7 @@ sudo killall mongod
 cat /local/repository/results/mongodb/mongod.log
 ```
 
-### CacheLib build failed
-CacheLib has complex dependencies. If the build fails:
-```bash
-# Check the setup log for errors
-grep -i "error\|fail" /local/logs/setup.log
 
-# Try rebuilding manually
-cd /local/build/CacheLib
-sudo ./contrib/build.sh -j $(nproc) -d
-```
-
----
 
 ## Hardware Compatibility
 

@@ -1,5 +1,5 @@
 # CS2640 Final Project: NVMe Storage Benchmarking Framework
-## RocksDB, MongoDB, and CacheLib on CloudLab Bare-Metal NVMe
+## RocksDB and MongoDB on CloudLab Bare-Metal NVMe
 
 ### Quick Start
 ```bash
