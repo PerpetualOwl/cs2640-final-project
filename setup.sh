@@ -40,13 +40,30 @@ sudo apt-get install -y -qq \
 # -----------------------------------------------------------------------
 # 2. Detect NVMe devices
 # -----------------------------------------------------------------------
-echo "[2/6] Detecting NVMe devices ..."
+echo "[2/7] Detecting NVMe devices ..."
 sudo nvme list
-NVME_DEVS=$(lsblk -dno NAME,TRAN | grep nvme | awk '{print "/dev/"$1}')
-echo "Found NVMe devices: $NVME_DEVS"
 
-# Pick the first NVMe device as the benchmark target
-TARGET_DEV=$(echo "$NVME_DEVS" | head -1)
+# Find an NVMe device that is NOT the OS disk.
+# The OS disk has partitions (p1, p2, etc.); the free disk has none.
+TARGET_DEV=""
+for dev in $(lsblk -dno NAME,TRAN | grep nvme | awk '{print "/dev/"$1}'); do
+    PART_COUNT=$(lsblk -no NAME "$dev" | wc -l)
+    if [ "$PART_COUNT" -le 1 ]; then
+        # This device has no partitions -- it's the free benchmark disk
+        TARGET_DEV="$dev"
+        break
+    else
+        echo "Skipping $dev (has partitions -- likely OS disk)"
+    fi
+done
+
+if [ -z "$TARGET_DEV" ]; then
+    echo "ERROR: No free NVMe device found. All devices have partitions."
+    echo "Available devices:"
+    lsblk -o NAME,SIZE,TYPE,MOUNTPOINT,TRAN
+    exit 1
+fi
+
 echo "Primary benchmark target: $TARGET_DEV"
 
 # Format and mount the NVMe for database workloads
@@ -63,7 +80,7 @@ echo "$TARGET_DEV mounted at /mnt/nvme"
 echo "[3/6] Building RocksDB ..."
 cd "$BUILDDIR"
 if [ ! -d rocksdb ]; then
-    git clone --depth 1 --branch v9.10.3 https://github.com/facebook/rocksdb.git
+    git clone --depth 1 --branch v9.11.2 https://github.com/facebook/rocksdb.git
 fi
 cd rocksdb
 mkdir -p build && cd build

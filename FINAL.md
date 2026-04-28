@@ -100,20 +100,20 @@ Meta's CacheLib is the production caching engine used across Meta's CDN, social 
 
 | Workload | Throughput (ops/sec) | Avg Latency (μs) | P99 Latency (μs) |
 |----------|---------------------|-------------------|-------------------|
-| fillseq | *pending* | *pending* | *pending* |
-| fillrandom | *pending* | *pending* | *pending* |
-| readrandom | *pending* | *pending* | *pending* |
-| readwhilewriting | *pending* | *pending* | *pending* |
-| overwrite | *pending* | *pending* | *pending* |
+| fillseq | 609,236 | *pending* | *pending* |
+| fillrandom | 280,655 | *pending* | *pending* |
+| readrandom | 82,430 | *pending* | *pending* |
+| readwhilewriting | 81,152 | *pending* | *pending* |
+| overwrite | 259,932 | *pending* | *pending* |
 
 #### MongoDB YCSB
 
 | Workload | Throughput (ops/sec) | Avg Read Lat (μs) | Avg Write Lat (μs) | P99 Lat (μs) |
 |----------|---------------------|--------------------|---------------------|---------------|
-| YCSB-A (50/50) | *pending* | *pending* | *pending* | *pending* |
-| YCSB-B (95/5) | *pending* | *pending* | *pending* | *pending* |
-| YCSB-C (100/0) | *pending* | *pending* | *pending* | *pending* |
-| YCSB-F (RMW) | *pending* | *pending* | *pending* | *pending* |
+| YCSB-A (50/50) | 35,770 | *pending* | *pending* | *pending* |
+| YCSB-B (95/5) | 37,602 | *pending* | *pending* | *pending* |
+| YCSB-C (100/0) | 39,774 | *pending* | *pending* | *pending* |
+| YCSB-F (RMW) | 23,516 | *pending* | *pending* | *pending* |
 
 #### CacheLib
 

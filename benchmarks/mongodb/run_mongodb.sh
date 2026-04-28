@@ -50,7 +50,7 @@ run_ycsb() {
     local label=$3
 
     echo "--- $label ---"
-    "$YCSB_DIR/bin/ycsb" "$phase" mongodb \
+    python2 "$YCSB_DIR/bin/ycsb" "$phase" mongodb \
         -s \
         -P "$YCSB_DIR/workloads/$workload" \
         -p recordcount=$RECORD_COUNT \

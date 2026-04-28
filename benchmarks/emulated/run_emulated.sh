@@ -67,12 +67,22 @@ echo "Verifying FDP configuration ..."
 vm "sudo nvme fdp status $FDP_DEV" | tee "$RESULTS_DIR/fdp_config.txt" || true
 
 # -----------------------------------------------------------------------
-# 3. Prepare filesystems in the VM
+# 3. Prepare filesystems and install dependencies in the VM
 # -----------------------------------------------------------------------
-echo "[3/5] Preparing filesystems on emulated devices ..."
+echo "[3/5] Preparing filesystems and dependencies on emulated devices ..."
 
 # Mount host share
 vm "sudo mkdir -p /host && sudo mount -t 9p -o trans=virtio hostshare /host 2>/dev/null" || true
+
+# Install runtime dependencies inside the VM (f2fs, python2, java, mongodb)
+echo "Installing dependencies inside VM (f2fs, python2, java, mongodb) ..."
+vm "sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq f2fs-tools python2-minimal openjdk-17-jre-headless gnupg curl"
+vm "if ! command -v mongod &>/dev/null; then \
+        curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg && \
+        echo 'deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse' | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list && \
+        sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq mongodb-org; \
+    fi"
+
 
 # Create filesystems on conventional and FDP devices
 vm "sudo mkfs.ext4 -F $CONV_DEV && sudo mkdir -p /mnt/conv && sudo mount -o discard,noatime $CONV_DEV /mnt/conv && sudo chmod 777 /mnt/conv"
@@ -132,7 +142,7 @@ vm "test -f /usr/local/bin/db_bench" 2>/dev/null || {
     }
 }
 
-for DEV_LABEL in conv fdp; do
+for DEV_LABEL in conv fdp zns; do
     MNT="/mnt/$DEV_LABEL"
     echo "--- db_bench on $DEV_LABEL ($MNT) ---"
     vm "rm -rf $MNT/rocksdb_bench $MNT/rocksdb_wal; mkdir -p $MNT/rocksdb_bench $MNT/rocksdb_wal" || continue
@@ -149,6 +159,50 @@ for DEV_LABEL in conv fdp; do
             $([ '$WORKLOAD' != 'fillseq' ] && [ '$WORKLOAD' != 'fillrandom' ] && echo '--use_existing_db' || echo '')" \
             2>&1 | tee "$RESULTS_DIR/rocksdb_${DEV_LABEL}_${WORKLOAD}.log" || true
     done
+done
+
+# --- 4c. MongoDB YCSB on emulated devices ---
+echo ""
+echo "=== MongoDB YCSB on emulated devices ==="
+
+# Define YCSB paths in the VM (mounted from host)
+YCSB_VM_DIR="/host/build/ycsb"
+MONGO_PORT=27099
+
+for DEV_LABEL in conv fdp zns; do
+    MNT="/mnt/$DEV_LABEL"
+    echo "--- MongoDB on $DEV_LABEL ($MNT) ---"
+    
+    # Setup data dir and start mongod
+    vm "sudo rm -rf $MNT/mongodb_data; sudo mkdir -p $MNT/mongodb_data && sudo chown -R mongodb:mongodb $MNT/mongodb_data"
+    vm "sudo -u mongodb mongod --dbpath $MNT/mongodb_data --port $MONGO_PORT --bind_ip 127.0.0.1 --wiredTigerCacheSizeGB 4 --wiredTigerCollectionBlockCompressor snappy --fork --logpath $MNT/mongod.log"
+    
+    # Wait for mongod to be ready
+    vm "for i in {1..30}; do if mongosh --port $MONGO_PORT --eval 'db.runCommand({ping:1})' > /dev/null 2>&1; then break; fi; sleep 1; done"
+    
+    for WORKLOAD in workloada workloadb workloadc workloadf; do
+        for PHASE in load run; do
+            # F runs after A, B, C usually don't need reload but we'll do standard reload for consistency or just run
+            if [[ "$PHASE" == "load" && "$WORKLOAD" != "workloada" ]]; then
+                # Only load on workloada, others just run to save time, unless we drop DB
+                # Actually we will drop and load for all to be consistent
+                vm "mongosh --port $MONGO_PORT --eval \"db.getSiblingDB('ycsb').dropDatabase()\" > /dev/null 2>&1"
+            elif [[ "$PHASE" == "load" ]]; then
+                vm "mongosh --port $MONGO_PORT --eval \"db.getSiblingDB('ycsb').dropDatabase()\" > /dev/null 2>&1"
+            fi
+            
+            echo "  > YCSB $WORKLOAD ($PHASE) on $DEV_LABEL"
+            vm "python2 $YCSB_VM_DIR/bin/ycsb $PHASE mongodb -s \
+                -P $YCSB_VM_DIR/workloads/$WORKLOAD \
+                -p recordcount=1000000 -p operationcount=500000 \
+                -p mongodb.url=\"mongodb://127.0.0.1:$MONGO_PORT/ycsb\" \
+                -threads 8" 2>&1 | tee "$RESULTS_DIR/mongodb_${DEV_LABEL}_${WORKLOAD}_${PHASE}.log" || true
+        done
+    done
+    
+    # Shutdown mongod
+    vm "mongosh --port $MONGO_PORT --eval 'db.adminCommand({shutdown: 1})' > /dev/null 2>&1 || true"
+    vm "sleep 3"
 done
 
 # --- 4c. Capture final NVMe stats ---

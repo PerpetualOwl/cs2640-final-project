@@ -71,6 +71,9 @@ packages:
   - sysstat
   - liburing-dev
   - numactl
+  - f2fs-tools
+  - python2-minimal
+  - openjdk-17-jre-headless
 runcmd:
   - echo "VM setup complete" > /tmp/vm_ready
 EOF
