@@ -1,11 +1,11 @@
 """
 CloudLab profile for CS2640 Final Project:
-NVMe Storage Benchmarking — Conventional vs ZNS vs FDP.
+NVMe Storage Benchmarking -- Conventional vs ZNS vs FDP.
 
-Requests a single bare-metal node with NVMe SSDs.  Benchmarks run in two
+Requests a single bare-metal node with NVMe SSDs. Benchmarks run in two
 modes:
-  1. NATIVE — db_bench / YCSB / cachebench directly on the physical NVMe
-  2. EMULATED — same workloads inside a KVM-accelerated QEMU VM against
+  1. NATIVE -- db_bench / YCSB / cachebench directly on the physical NVMe
+  2. EMULATED -- same workloads inside a KVM-accelerated QEMU VM against
      emulated ZNS and FDP NVMe namespaces (backed by the real NVMe)
 
 This dual-mode approach produces the comprehensive result matrix comparing
@@ -16,7 +16,7 @@ import geni.portal as portal
 import geni.rspec.pg as pg
 
 # ---------------------------------------------------------------------------
-# Portal context & parameters
+# Portal context and parameters
 # ---------------------------------------------------------------------------
 pc = portal.Context()
 
@@ -27,21 +27,21 @@ pc.defineParameter(
     "c6620",
     [
         # --- Utah (recommended: best NVMe + KVM) ---
-        ("c6620",    "c6620  — Utah, 28c Xeon, 2x800GB NVMe Gen4, 100Gb"),
-        ("d760",     "d760   — Utah, 64c Xeon, 2x1.6TB NVMe Gen5, 100Gb"),
-        ("d7615",    "d7615  — Utah, 32c EPYC, 2x1.6TB NVMe Gen5, 100Gb"),
-        ("d760-hbm", "d760-hbm — Utah, 64c Xeon+HBM, 2x1.6TB NVMe Gen5"),
-        ("c6525-100g", "c6525-100g — Utah, 24c EPYC, 2x1.6TB NVMe Gen4, 100Gb"),
-        ("d750",     "d750   — Utah, 16c Xeon, Optane+NVMe Gen4, 25Gb"),
+        ("c6620",    "c6620 - Utah, 28c Xeon, 2x800GB NVMe Gen4, 100Gb"),
+        ("d760",     "d760 - Utah, 64c Xeon, 2x1.6TB NVMe Gen5, 100Gb"),
+        ("d7615",    "d7615 - Utah, 32c EPYC, 2x1.6TB NVMe Gen5, 100Gb"),
+        ("d760-hbm", "d760-hbm - Utah, 64c Xeon+HBM, 2x1.6TB NVMe Gen5"),
+        ("c6525-100g", "c6525-100g - Utah, 24c EPYC, 2x1.6TB NVMe Gen4, 100Gb"),
+        ("d750",     "d750 - Utah, 16c Xeon, Optane+NVMe Gen4, 25Gb"),
         # --- Wisconsin ---
-        ("sm110p",   "sm110p — Wisc, 16c Xeon, 4x960GB Samsung NVMe Gen4"),
-        ("sm220u",   "sm220u — Wisc, 32c Xeon, 8x960GB Samsung NVMe Gen4"),
-        ("d7525",    "d7525  — Wisc, 32c EPYC, 1x1.6TB NVMe Gen4, A30 GPU"),
-        ("d8545",    "d8545  — Wisc, 48c EPYC, 1x1.6TB NVMe Gen4, 4xA100"),
+        ("sm110p",   "sm110p - Wisc, 16c Xeon, 4x960GB Samsung NVMe Gen4"),
+        ("sm220u",   "sm220u - Wisc, 32c Xeon, 8x960GB Samsung NVMe Gen4"),
+        ("d7525",    "d7525 - Wisc, 32c EPYC, 1x1.6TB NVMe Gen4, A30 GPU"),
+        ("d8545",    "d8545 - Wisc, 48c EPYC, 1x1.6TB NVMe Gen4, 4xA100"),
         # --- Clemson ---
-        ("r650",     "r650   — Clem, 72c Xeon, 1x1.6TB NVMe Gen4, 100Gb"),
-        ("r6525",    "r6525  — Clem, 64c EPYC, 1x1.6TB NVMe Gen4, 100Gb"),
-        ("r6615",    "r6615  — Clem, 32c EPYC, 2x800GB NVMe Gen4, 100Gb"),
+        ("r650",     "r650 - Clem, 72c Xeon, 1x1.6TB NVMe Gen4, 100Gb"),
+        ("r6525",    "r6525 - Clem, 64c EPYC, 1x1.6TB NVMe Gen4, 100Gb"),
+        ("r6615",    "r6615 - Clem, 32c EPYC, 2x800GB NVMe Gen4, 100Gb"),
     ],
     "Bare-metal node type. Must have NVMe SSDs and KVM support (x86_64).",
 )
