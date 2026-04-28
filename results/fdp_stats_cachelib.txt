@@ -1,3 +1,0 @@
-Host Bytes with Metadata Written (HBMW): 912982016
-Media Bytes with Metadata Written (MBMW): 913174528
-Media Bytes Erased (MBE): 0

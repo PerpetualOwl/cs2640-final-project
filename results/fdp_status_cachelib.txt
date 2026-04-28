@@ -1,4 +1,0 @@
-Placement Identifier 0; Reclaim Unit Handle Identifier 0
-  Estimated Active Reclaim Unit Time Remaining (EARUTR): 0
-  Reclaim Unit Available Media Writes (RUAMW): 182912
-
