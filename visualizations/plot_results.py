@@ -124,7 +124,7 @@ def plot_mongodb():
     ax.legend()
 
     plt.tight_layout()
-    plt.savefig(os.path.join(OUT_DIR, 'mongodb_throughput.pdf'))
+    plt.savefig(os.path.join(OUT_DIR, 'mongodb_throughput.png'))
     plt.close()
 
 if __name__ == "__main__":
