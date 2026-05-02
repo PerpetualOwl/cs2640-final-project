@@ -78,7 +78,7 @@ def plot_rocksdb():
     print()
     
     plt.tight_layout()
-    plt.savefig(os.path.join(OUT_DIR, 'rocksdb_throughput.pdf'))
+    plt.savefig(os.path.join(OUT_DIR, 'rocksdb_throughput.png'))
     plt.close()
 
 def plot_mongodb():
