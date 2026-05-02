@@ -1,4 +1,4 @@
-Linux node.howard12-303115.cs2640-pg0.utah.cloudlab.us 5.15.0-168-generic #178-Ubuntu SMP Fri Jan 9 19:05:03 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+Linux node.howard12-303848.cs2640-pg0.utah.cloudlab.us 5.15.0-168-generic #178-Ubuntu SMP Fri Jan 9 19:05:03 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
 Architecture:                            x86_64
 CPU op-mode(s):                          32-bit, 64-bit
 Address sizes:                           46 bits physical, 57 bits virtual
@@ -42,12 +42,12 @@ Vulnerability Tsa:                       Not affected
 Vulnerability Tsx async abort:           Not affected
 Vulnerability Vmscape:                   Mitigation; IBPB before exit to userspace
                total        used        free      shared  buff/cache   available
-Mem:           125Gi       6.6Gi       107Gi       8.0Mi        11Gi       117Gi
+Mem:           125Gi       6.6Gi       118Gi       8.0Mi       548Mi       117Gi
 Swap:          8.0Gi          0B       8.0Gi
 
 --- NVMe Devices ---
 Node                  SN                   Model                                    Namespace Usage                      Format           FW Rev  
 --------------------- -------------------- ---------------------------------------- --------- -------------------------- ---------------- --------
-/dev/nvme0n1          242849DE3A15         Dell DC NVMe ISE 7450 MU U.2 800GB       1          17.32  GB / 800.17  GB    512   B +  0 B   1.4.0   
-/dev/nvme1n1          242849DE39AD         Dell DC NVMe ISE 7450 MU U.2 800GB       1          13.59  GB / 800.17  GB    512   B +  0 B   1.4.0   
+/dev/nvme0n1          242849DC545D         Dell DC NVMe ISE 7450 MU U.2 800GB       1          13.54  GB / 800.17  GB    512   B +  0 B   1.4.0   
+/dev/nvme1n1          242849DC54E6         Dell DC NVMe ISE 7450 MU U.2 800GB       1          22.90  GB / 800.17  GB    512   B +  0 B   1.4.0   
 

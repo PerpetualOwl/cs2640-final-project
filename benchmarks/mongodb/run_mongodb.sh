@@ -23,9 +23,17 @@ echo "Records: $RECORD_COUNT, Operations: $OP_COUNT"
 echo "Threads: $THREADS"
 echo ""
 
+# Raise file descriptor limit (mongod recommends >= 64000)
+ulimit -n 65536 2>/dev/null || ulimit -n 8192 2>/dev/null || true
+
+# Kill any stale mongod instances and clean up
+echo "Cleaning up any stale mongod ..."
+pkill -x mongod 2>/dev/null || true; sleep 2
+
 # Start a fresh mongod instance pointing at the NVMe
 echo "Starting mongod on port $MONGO_PORT ..."
 rm -rf "$DB_DIR"/*
+mkdir -p "$DB_DIR"
 mongod --dbpath "$DB_DIR" \
     --port $MONGO_PORT \
     --bind_ip 127.0.0.1 \

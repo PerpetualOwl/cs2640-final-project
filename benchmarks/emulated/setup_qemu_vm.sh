@@ -52,8 +52,13 @@ setup_images() {
         dd if=/dev/zero of="$CONV_IMG" bs=1M count=$CONV_SIZE_MB status=progress
     fi
 
+    if [ ! -f ~/.ssh/id_rsa ]; then
+        ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
+    fi
+    PUB_KEY=$(cat ~/.ssh/id_rsa.pub)
+
     # Create cloud-init configuration
-    cat > "$CLOUD_INIT_DIR/user-data" << 'EOF'
+    cat > "$CLOUD_INIT_DIR/user-data" << EOF
 #cloud-config
 password: benchuser
 chpasswd: { expire: False }
@@ -64,6 +69,8 @@ users:
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
     lock_passwd: false
+    ssh_authorized_keys:
+      - $PUB_KEY
 packages:
   - build-essential
   - nvme-cli
@@ -115,8 +122,8 @@ start_vm() {
         -m "$VM_RAM" \
         -smp "$VM_CPUS" \
         -cpu host \
-        -nographic \
-        -serial mon:stdio \
+        -display none \
+        -serial file:"$QEMU_DIR/vm-serial.log" \
         -drive file="$VM_DISK",format=qcow2,if=virtio \
         -drive file="$QEMU_DIR/cloud-init.iso",format=raw,if=virtio \
         \
@@ -125,9 +132,8 @@ start_vm() {
         -device nvme-ns,drive=zns-drive,bus=nvme0,nsid=1,logical_block_size=4096,physical_block_size=4096,zoned=true,zoned.zone_size="$zone_size_sectors",zoned.zone_capacity="$zone_size_sectors",zoned.max_open=16,zoned.max_active=32 \
         \
         -drive file="$FDP_IMG",id=fdp-drive,format=raw,if=none \
-        -device nvme,serial=fdp-nvme1,id=nvme1,subsys=nvme-subsys0 \
-        -device nvme-ns,drive=fdp-drive,bus=nvme1,nsid=1,logical_block_size=4096,physical_block_size=4096,fdp=on,fdp.runs=16,fdp.nrg=1,fdp.nruh=16,fdp.ruhs=1:2:3:4:5:6:7:8:9:10:11:12:13:14:15:16 \
-        -device nvme-subsys,id=nvme-subsys0,fdp=on,fdp.nrg=1,fdp.nruh=16 \
+        -device nvme,serial=fdp-nvme1,id=nvme1 \
+        -device nvme-ns,drive=fdp-drive,bus=nvme1,nsid=1,logical_block_size=4096,physical_block_size=4096 \
         \
         -drive file="$CONV_IMG",id=conv-drive,format=raw,if=none \
         -device nvme,serial=conv-nvme2,id=nvme2 \
@@ -138,12 +144,11 @@ start_vm() {
         -net nic -net user,hostfwd=tcp::${SSH_PORT}-:22 \
         -monitor unix:"$MONITOR_SOCK",server,nowait \
         -pidfile "$PID_FILE" \
-        -daemonize \
-        2>&1
+        -daemonize
 
     echo "VM started. Waiting for SSH to become available ..."
     for i in $(seq 1 120); do
-        if ssh -q -o StrictHostKeyChecking=no -o ConnectTimeout=2 \
+        if ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa -o ConnectTimeout=2 \
                -p $SSH_PORT bench@localhost echo "ready" 2>/dev/null; then
             echo "VM SSH is ready!"
             return 0
@@ -172,7 +177,7 @@ stop_vm() {
 }
 
 vm_ssh() {
-    ssh -o StrictHostKeyChecking=no -p $SSH_PORT bench@localhost "$@"
+    ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa -p $SSH_PORT bench@localhost "$@"
 }
 
 status_vm() {

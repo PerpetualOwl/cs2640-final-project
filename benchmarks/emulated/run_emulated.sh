@@ -33,7 +33,7 @@ bash "$SCRIPT_DIR/setup_qemu_vm.sh" start
 
 # Helper to run commands in the VM
 vm() {
-    ssh -q -o StrictHostKeyChecking=no -p $SSH_PORT bench@localhost "$@"
+    ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa -p $SSH_PORT bench@localhost "$@"
 }
 
 # Wait for VM to be fully ready
@@ -62,9 +62,8 @@ CONV_DEV="/dev/nvme2n1"
 echo "Verifying ZNS zones ..."
 vm "sudo nvme zns report-zones $ZNS_DEV -d 5" | tee "$RESULTS_DIR/zns_zones.txt" || true
 
-# Verify FDP config
-echo "Verifying FDP configuration ..."
-vm "sudo nvme fdp status $FDP_DEV" | tee "$RESULTS_DIR/fdp_config.txt" || true
+# Note: FDP emulation not available in QEMU 6.2; fdp device runs as plain conventional NVMe
+echo "Note: QEMU 6.2 does not support FDP emulation; FDP slot uses conventional NVMe (protocol comparison via workload patterns)"
 
 # -----------------------------------------------------------------------
 # 3. Prepare filesystems and install dependencies in the VM
@@ -84,13 +83,19 @@ vm "if ! command -v mongod &>/dev/null; then \
     fi"
 
 
+# Unmount if already mounted
+vm "sudo umount /mnt/conv 2>/dev/null || true"
+vm "sudo umount /mnt/fdp 2>/dev/null || true"
+vm "sudo umount /mnt/zns 2>/dev/null || true"
+
 # Create filesystems on conventional and FDP devices
 vm "sudo mkfs.ext4 -F $CONV_DEV && sudo mkdir -p /mnt/conv && sudo mount -o discard,noatime $CONV_DEV /mnt/conv && sudo chmod 777 /mnt/conv"
 vm "sudo mkfs.ext4 -F $FDP_DEV && sudo mkdir -p /mnt/fdp && sudo mount -o discard,noatime $FDP_DEV /mnt/fdp && sudo chmod 777 /mnt/fdp"
 
-# ZNS needs a zone-aware filesystem or direct access — use f2fs if available, else direct fio
-vm "sudo mkfs.f2fs -f -m $ZNS_DEV && sudo mkdir -p /mnt/zns && sudo mount -o discard,noatime $ZNS_DEV /mnt/zns && sudo chmod 777 /mnt/zns" 2>/dev/null || {
-    echo "NOTE: f2fs not available for ZNS. Will use fio with io_uring_cmd for direct zone access."
+# ZNS needs a zone-aware filesystem — f2fs with -m (zoned) flag
+vm "sudo mkfs.f2fs -f -m $ZNS_DEV 2>/dev/null && sudo mkdir -p /mnt/zns && sudo mount -o discard,noatime,background_gc=off $ZNS_DEV /mnt/zns && sudo chmod 777 /mnt/zns" || {
+    echo "NOTE: f2fs zoned mount failed for ZNS. ZNS db_bench will be skipped; fio runs directly on raw device."
+    vm "sudo mkdir -p /mnt/zns && sudo chmod 777 /mnt/zns" || true
 }
 
 # -----------------------------------------------------------------------
@@ -102,34 +107,29 @@ echo "[4/5] Running benchmarks ..."
 echo ""
 echo "=== fio protocol-level benchmarks ==="
 
-# ZNS: Sequential write (zone append)
+# ZNS: Sequential write (zone append) — use libaio for QEMU 6.2 compatibility
 echo "--- fio: ZNS Sequential Write ---"
 vm "sudo fio --name=zns_seqwrite \
-    --filename=$ZNS_DEV --direct=1 --ioengine=io_uring_cmd \
-    --cmd_type=nvme --rw=write --bs=128k \
+    --filename=$ZNS_DEV --direct=1 --ioengine=libaio \
+    --rw=write --bs=128k \
     --iodepth=32 --numjobs=1 --size=4G \
     --output-format=json" 2>&1 | tee "$RESULTS_DIR/fio_zns_seqwrite.json"
 
-# FDP: Random write with placement hints
-echo "--- fio: FDP Random Write ---"
+# FDP slot: Random write (plain NVMe on QEMU 6.2 — same ioengine as conventional)
+echo "--- fio: FDP-slot Random Write (conventional NVMe, QEMU 6.2) ---"
 vm "sudo fio --name=fdp_randwrite \
-    --filename=$FDP_DEV --direct=1 --ioengine=io_uring_cmd \
-    --cmd_type=nvme --rw=randwrite --bs=4k \
+    --filename=$FDP_DEV --direct=1 --ioengine=libaio \
+    --rw=randwrite --bs=4k \
     --iodepth=32 --numjobs=4 --size=4G \
-    --fdp=1 --fdp_pli=0,1,2,3 \
     --output-format=json" 2>&1 | tee "$RESULTS_DIR/fio_fdp_randwrite.json"
 
 # Conventional: Random write (baseline)
 echo "--- fio: Conventional Random Write ---"
 vm "sudo fio --name=conv_randwrite \
-    --filename=$CONV_DEV --direct=1 --ioengine=io_uring_cmd \
-    --cmd_type=nvme --rw=randwrite --bs=4k \
+    --filename=$CONV_DEV --direct=1 --ioengine=libaio \
+    --rw=randwrite --bs=4k \
     --iodepth=32 --numjobs=4 --size=4G \
     --output-format=json" 2>&1 | tee "$RESULTS_DIR/fio_conv_randwrite.json"
-
-# Capture FDP stats after fio
-echo "--- FDP Stats after fio ---"
-vm "sudo nvme fdp stats $FDP_DEV" | tee "$RESULTS_DIR/fdp_stats_post_fio.txt" || true
 
 # --- 4b. RocksDB db_bench (if available in VM) ---
 echo ""
@@ -149,6 +149,10 @@ for DEV_LABEL in conv fdp zns; do
 
     for WORKLOAD in fillseq fillrandom readrandom overwrite; do
         echo "  > $WORKLOAD on $DEV_LABEL"
+        USE_EXISTING=""
+        if [ "$WORKLOAD" != "fillseq" ] && [ "$WORKLOAD" != "fillrandom" ]; then
+            USE_EXISTING="--use_existing_db"
+        fi
         vm "db_bench --benchmarks=$WORKLOAD \
             --db=$MNT/rocksdb_bench --wal_dir=$MNT/rocksdb_wal \
             --num=1000000 --value_size=1024 --threads=4 \
@@ -156,7 +160,7 @@ for DEV_LABEL in conv fdp zns; do
             --write_buffer_size=67108864 \
             --use_direct_io_for_flush_and_compaction \
             --use_direct_reads \
-            $([ '$WORKLOAD' != 'fillseq' ] && [ '$WORKLOAD' != 'fillrandom' ] && echo '--use_existing_db' || echo '')" \
+            $USE_EXISTING" \
             2>&1 | tee "$RESULTS_DIR/rocksdb_${DEV_LABEL}_${WORKLOAD}.log" || true
     done
 done
@@ -211,11 +215,10 @@ echo "=== Final NVMe Statistics ==="
 echo "--- ZNS Zone Report ---"
 vm "sudo nvme zns report-zones $ZNS_DEV" | tee "$RESULTS_DIR/zns_zones_final.txt" || true
 
-echo "--- FDP Stats ---"
-vm "sudo nvme fdp stats $FDP_DEV" | tee "$RESULTS_DIR/fdp_stats_final.txt" || true
-
-echo "--- FDP Events ---"
-vm "sudo nvme fdp events $FDP_DEV" | tee "$RESULTS_DIR/fdp_events.txt" || true
+echo "--- NVMe device SMART stats (all devices) ---"
+for DEV in $ZNS_DEV $FDP_DEV $CONV_DEV; do
+    vm "sudo nvme smart-log $DEV" | tee "$RESULTS_DIR/nvme_smart_${DEV//\//_}.txt" || true
+done
 
 # -----------------------------------------------------------------------
 # 5. Collect results and shutdown
