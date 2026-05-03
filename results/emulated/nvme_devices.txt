@@ -1,5 +1,0 @@
-Node                  SN                   Model                                    Namespace Usage                      Format           FW Rev  
---------------------- -------------------- ---------------------------------------- --------- -------------------------- ---------------- --------
-/dev/nvme0n1          zns-nvme0            QEMU NVMe Ctrl                           1          17.18  GB /  17.18  GB      4 KiB +  0 B   1.0     
-/dev/nvme1n1          fdp-nvme1            QEMU NVMe Ctrl                           1          17.18  GB /  17.18  GB      4 KiB +  0 B   1.0     
-/dev/nvme2n1          conv-nvme2           QEMU NVMe Ctrl                           1          17.18  GB /  17.18  GB      4 KiB +  0 B   1.0     

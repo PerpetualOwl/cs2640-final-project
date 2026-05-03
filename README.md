@@ -7,6 +7,3 @@
 cd /local/repository
 sudo ./benchmarks/run_all.sh
 ```
-
-See [CLOUDLAB_INSTRUCTIONS.md](CLOUDLAB_INSTRUCTIONS.md) for full setup guide.
-See [FINAL.md](FINAL.md) for project report and results.

@@ -1,6 +1,0 @@
-nr_zones: 131072
-SLBA: 0          WP: 0xffffffffffffffff Cap: 0x20       State: 0xe0 Type: 0x2  Attrs: 0    AttrsInfo: 0   
-SLBA: 0x20       WP: 0xffffffffffffffff Cap: 0x20       State: 0xe0 Type: 0x2  Attrs: 0    AttrsInfo: 0   
-SLBA: 0x40       WP: 0xffffffffffffffff Cap: 0x20       State: 0xe0 Type: 0x2  Attrs: 0    AttrsInfo: 0   
-SLBA: 0x60       WP: 0xffffffffffffffff Cap: 0x20       State: 0xe0 Type: 0x2  Attrs: 0    AttrsInfo: 0   
-SLBA: 0x80       WP: 0xffffffffffffffff Cap: 0x20       State: 0xe0 Type: 0x2  Attrs: 0    AttrsInfo: 0   
